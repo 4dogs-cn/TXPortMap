@@ -4,6 +4,8 @@ import (
 	"fmt"
 	ps "github.com/4dogs-cn/TXPortMap/pkg/common/ipparser"
 	rc "github.com/4dogs-cn/TXPortMap/pkg/common/rangectl"
+	"github.com/4dogs-cn/TXPortMap/pkg/conversion"
+	"github.com/4dogs-cn/TXPortMap/pkg/output"
 	"io"
 	"net"
 	"strings"
@@ -20,6 +22,10 @@ type Addr struct {
 // 	Begin uint64
 // 	End   uint64
 // }
+
+var (
+	Writer output.Writer
+)
 
 type Engine struct {
 	TaskIps     []rc.Range
@@ -88,6 +94,11 @@ func (e *Engine) Scheduler() {
 
 // 参数解析，对命令行中传递的参数进行格式化存储
 func (e *Engine) Parser() error {
+	var err error
+	Writer, err = output.NewStandardWriter(color, false, rstfile, tracelog)
+	if err != nil {
+		return err
+	}
 	var ports []string
 	// TODO:: 待增加排除ip和排除端口流程
 
@@ -320,12 +331,18 @@ func worker(res chan Addr, wg *sync.WaitGroup) {
 
 func SendIdentificationPacketFunction(data []byte, ip string, port uint64) int {
 	addr := fmt.Sprintf("%s:%d", ip, port)
+	even := &output.ResultEvent{
+		Target: addr,
+		Info:   output.Info{},
+	}
+
 	//fmt.Println(addr)
 	var dwSvc int = UNKNOWN_PORT
 
 	conn, err := net.DialTimeout("tcp", addr, 5*time.Second)
 	if err != nil {
 		// 端口是closed状态
+		Writer.Request(ip,conversion.ToString(port),"tcp",fmt.Errorf("time out"))
 		return SOCKET_CONNECT_FAILED
 	}
 
@@ -334,7 +351,7 @@ func SendIdentificationPacketFunction(data []byte, ip string, port uint64) int {
 	// Write方法是非阻塞的
 
 	if _, err := conn.Write(data); err != nil {
-		fmt.Println(err)
+		Writer.Request(ip, conversion.ToString(port), "tcp", err)
 		return dwSvc
 	}
 
@@ -372,17 +389,22 @@ func SendIdentificationPacketFunction(data []byte, ip string, port uint64) int {
 		} else {
 			// 虽然没有读取到数据，但是端口仍然是open的
 			// fmt.Printf("Discovered open port\t%d\ton\t%s\n", port, ip)
+
 			break
 		}
 	}
-
+	Writer.Request(ip,conversion.ToString(port),"tcp",err)
 	// 服务识别
 	if num > 0 {
 		dwSvc = ComparePackets(fingerprint, num, &szBan, &szSvcName)
 
 		if dwSvc > UNKNOWN_PORT && dwSvc < SOCKET_CONNECT_FAILED {
+			//even.WorkingEvent = "found"
+			even.Info.Banner = strings.TrimSpace(szBan)
+			even.Info.Service = szSvcName
+			even.Time = time.Now()
 			// fmt.Printf("Discovered open port\t%d\ton\t%s\t\t%s\t\t%s\n", port, ip, szSvcName, strings.TrimSpace(szBan))
-			fmt.Printf("{\"ip\": \"%s\",\"port\": \"%d\",\"service\": \"%s\",\"banner\": \"%s\"}\n", ip, port, szSvcName, strings.TrimSpace(szBan))
+			Writer.Write(even)
 			return dwSvc
 		}
 	}

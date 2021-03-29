@@ -46,4 +46,7 @@ func main() {
 
 	// 等待扫描任务完成
 	engine.Wg.Wait()
+	if common.Writer !=nil{
+		common.Writer.Close()
+	}
 }
