@@ -27,8 +27,8 @@ type Info struct {
 	Service string
 }
 type ResultEvent struct {
-	WorkingEvent string    `json:"WorkingEvent"`
-	Info         Info      `json:"info,inline"`
+	WorkingEvent interface{}    `json:"WorkingEvent"`
+	Info         *Info      `json:"info,inline"`
 	Time         time.Time `json:"time"`
 	Target       string    `json:"Target"`
 }

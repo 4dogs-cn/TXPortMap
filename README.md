@@ -1,13 +1,24 @@
-# TXPortMap
+TXPortMap
+
 Port Scanner &amp; Banner Identify From TianXiang
 
 ```
 ./TxPortMap -h
 ```
 
-![image-20210329112056656](./img/image-20210329112056656.png)
+![image-20210329210749167](./img/image-20210329210749167.png)
 
+```
+新增加彩色文字输出格式 对http/https协议进行title以及报文长度打印，获取title失败打印报文前20字节
+```
 
+![image-20210329211309482](/Users/yanshiling/Library/Application Support/typora-user-images/image-20210329211309482.png)
+
+```
+新增日志文件以及扫描结果文件
+```
+
+![image-20210329211016678](./img/image-20210329211016678.png)
 
 ```
 TxPortMap 会直接扫描top100 加上t1000参数会扫描top1000 可以通过-p 指定端口，分号指定多个
@@ -31,4 +42,8 @@ nmap 2分51.89秒
 ![image-20210329114458453](./img/image-20210329114458453.png)
 
 ![image-20210329114524449](./img/image-20210329114524449.png)
+
+
+
+
 

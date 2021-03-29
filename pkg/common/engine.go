@@ -2,6 +2,7 @@ package common
 
 import (
 	"fmt"
+	"github.com/4dogs-cn/TXPortMap/pkg/Ginfo/Ghttp"
 	ps "github.com/4dogs-cn/TXPortMap/pkg/common/ipparser"
 	rc "github.com/4dogs-cn/TXPortMap/pkg/common/rangectl"
 	"github.com/4dogs-cn/TXPortMap/pkg/conversion"
@@ -333,7 +334,7 @@ func SendIdentificationPacketFunction(data []byte, ip string, port uint64) int {
 	addr := fmt.Sprintf("%s:%d", ip, port)
 	even := &output.ResultEvent{
 		Target: addr,
-		Info:   output.Info{},
+		Info:   &output.Info{},
 	}
 
 	//fmt.Println(addr)
@@ -400,8 +401,14 @@ func SendIdentificationPacketFunction(data []byte, ip string, port uint64) int {
 
 		if dwSvc > UNKNOWN_PORT && dwSvc < SOCKET_CONNECT_FAILED {
 			//even.WorkingEvent = "found"
-			even.Info.Banner = strings.TrimSpace(szBan)
-			even.Info.Service = szSvcName
+			if szSvcName == "ssl/tls" || szSvcName == "http"{
+				 rst := Ghttp.GetHttpTitle(ip,szSvcName,int(port))
+				 even.WorkingEvent = rst
+			}else{
+				even.Info.Banner = strings.TrimSpace(szBan)
+				even.Info.Service = szSvcName
+
+			}
 			even.Time = time.Now()
 			// fmt.Printf("Discovered open port\t%d\ton\t%s\t\t%s\t\t%s\n", port, ip, szSvcName, strings.TrimSpace(szBan))
 			Writer.Write(even)
