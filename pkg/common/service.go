@@ -370,6 +370,8 @@ func ComparePackets(rcv []byte, rcvSize int, szBan *string, szSvcName *string) i
 		// HTTP 打印100个字符就够了，不然整个网页太长
 		if len(printBuf) > 100{
 			*szBan = printBuf[:100]
+		}else {
+			*szBan = printBuf
 		}
 		goto Return
 	}

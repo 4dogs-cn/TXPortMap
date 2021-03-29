@@ -96,7 +96,7 @@ func (e *Engine) Scheduler() {
 // 参数解析，对命令行中传递的参数进行格式化存储
 func (e *Engine) Parser() error {
 	var err error
-	Writer, err = output.NewStandardWriter(color, false, rstfile, tracelog)
+	Writer, err = output.NewStandardWriter(nocolor,false, rstfile, tracelog)
 	if err != nil {
 		return err
 	}
@@ -398,7 +398,9 @@ func SendIdentificationPacketFunction(data []byte, ip string, port uint64) int {
 	// 服务识别
 	if num > 0 {
 		dwSvc = ComparePackets(fingerprint, num, &szBan, &szSvcName)
-
+		if len(szBan) > 15{
+			szBan = szBan[:15]
+		}
 		if dwSvc > UNKNOWN_PORT && dwSvc < SOCKET_CONNECT_FAILED {
 			//even.WorkingEvent = "found"
 			if szSvcName == "ssl/tls" || szSvcName == "http"{

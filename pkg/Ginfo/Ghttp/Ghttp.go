@@ -5,7 +5,8 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"github.com/logrusorgru/aurora"
+	"github.com/4dogs-cn/TXPortMap/pkg/conversion"
+	"github.com/fatih/color"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -226,29 +227,29 @@ func GetHttpTitle(target, proc string, port int) Result {
 	return result
 }
 
-func (r *Result) ToString(aurora aurora.Aurora) string {
+func (r *Result) ToString() string {
 
 	builder := &bytes.Buffer{}
 	if r.err != nil {
 		builder.WriteString("[")
-		builder.WriteString(aurora.Red(r.err.Error()).String())
+		builder.WriteString(color.RedString(r.err.Error()))
 		builder.WriteString("]")
 	} else {
 		builder.WriteString("[")
-		builder.WriteString(aurora.Green(r.StatusCode).String())
+		builder.WriteString(color.GreenString(conversion.ToString(r.StatusCode)))
 		if r.ContentLength != -1 {
 			builder.WriteString("|")
-			builder.WriteString(aurora.Yellow(r.ContentLength).String())
+			builder.WriteString(color.YellowString(conversion.ToString(r.ContentLength)))
 		}
 		builder.WriteString("]")
 
 		if r.Title !=""{
 			builder.WriteString("[")
-			builder.WriteString(aurora.Green(r.Title).String())
+			builder.WriteString(color.GreenString(r.Title))
 			builder.WriteString("]")
 		}else{
 			builder.WriteString("[")
-			builder.WriteString(aurora.Green(r.str[:20]).String())
+			builder.WriteString(color.GreenString(r.str[:10]))
 			builder.WriteString("]")
 		}
 

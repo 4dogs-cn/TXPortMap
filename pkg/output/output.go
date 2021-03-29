@@ -1,9 +1,11 @@
 package output
 
 import (
+	"github.com/fatih/color"
 	jsoniter "github.com/json-iterator/go"
-	"github.com/logrusorgru/aurora"
 	"github.com/pkg/errors"
+	"github.com/shiena/ansicolor"
+	"io"
 	"os"
 	"regexp"
 	"sync"
@@ -14,8 +16,6 @@ import (
 type Writer interface {
 	// Close closes the output writer interface
 	Close()
-	// Colorizer returns the colorizer instance for writer
-	Colorizer() aurora.Aurora
 	// Write writes the event to file and/or screen.
 	Write(*ResultEvent) error
 	// Request logs a request in the trace log
@@ -27,27 +27,28 @@ type Info struct {
 	Service string
 }
 type ResultEvent struct {
-	WorkingEvent interface{}    `json:"WorkingEvent"`
-	Info         *Info      `json:"info,inline"`
-	Time         time.Time `json:"time"`
-	Target       string    `json:"Target"`
+	WorkingEvent interface{} `json:"WorkingEvent"`
+	Info         *Info       `json:"info,inline"`
+	Time         time.Time   `json:"time"`
+	Target       string      `json:"Target"`
 }
 
 type StandardWriter struct {
+	w           io.Writer
 	json        bool
-	aurora      aurora.Aurora
 	outputFile  *fileWriter
 	outputMutex *sync.Mutex
 	traceFile   *fileWriter
 	traceMutex  *sync.Mutex
-	Colors      *Colorizer
 }
 
 var decolorizerRegex = regexp.MustCompile(`\x1B\[[0-9;]*[a-zA-Z]`)
 
-func NewStandardWriter(color, json bool, file, traceFile string) (*StandardWriter, error) {
-	auroraColorizer := aurora.NewAurora(color)
-
+func NewStandardWriter(nocolor, json bool, file, traceFile string) (*StandardWriter, error) {
+	w := ansicolor.NewAnsiColorWriter(os.Stdout)
+	if nocolor {
+		color.NoColor = true
+	}
 	var outputFile *fileWriter
 	if file != "" {
 		output, err := newFileOutputWriter(file)
@@ -66,13 +67,12 @@ func NewStandardWriter(color, json bool, file, traceFile string) (*StandardWrite
 		traceOutput = output
 	}
 	writer := &StandardWriter{
+		w:           w,
 		json:        json,
-		aurora:      auroraColorizer,
 		outputFile:  outputFile,
 		outputMutex: &sync.Mutex{},
 		traceFile:   traceOutput,
 		traceMutex:  &sync.Mutex{},
-		Colors:      ColorNew(auroraColorizer),
 	}
 	return writer, nil
 }
@@ -95,8 +95,8 @@ func (w *StandardWriter) Write(event *ResultEvent) error {
 	if len(data) == 0 {
 		return nil
 	}
-	_, _ = os.Stdout.Write(data)
-	_, _ = os.Stdout.Write([]byte("\n"))
+	_, _ = w.w.Write(data)
+	_, _ = w.w.Write([]byte("\n"))
 	if w.outputFile != nil {
 		if !w.json {
 			data = decolorizerRegex.ReplaceAll(data, []byte(""))
@@ -106,10 +106,6 @@ func (w *StandardWriter) Write(event *ResultEvent) error {
 		}
 	}
 	return nil
-}
-
-func (w *StandardWriter) Colorizer() aurora.Aurora {
-	return w.aurora
 }
 
 func (w *StandardWriter) Close() {
