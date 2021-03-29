@@ -188,7 +188,7 @@ retry:
 
 	return Result{
 		URL:           fullURL,
-		ContentLength: int(resp.ContentLength),
+		ContentLength: len(body),
 		StatusCode:    resp.StatusCode,
 		ContentType:   resp.Header.Get("Content-Type"),
 		Title:         title,
