@@ -1,9 +1,11 @@
 package rangectl
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	ps "github.com/4dogs-cn/TXPortMap/pkg/common/ipparser"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -159,4 +161,40 @@ func ParseIpv4Range(ip string) (Range, error) {
 	result.End = num
 
 	return result, nil
+}
+
+
+func ParseIPFromFile(path string) ([]Range ,error){
+	var ips []Range
+	p,err := os.Stat(path)
+	if err != nil{
+		return nil,err
+	}
+	if p.IsDir(){
+		return nil,fmt.Errorf("could not input a dir: %s",path)
+	}
+
+	input,err := os.Open(path)
+
+	if err != nil{
+		return nil,fmt.Errorf("open file error: %s",path)
+	}
+
+
+	scanner := bufio.NewScanner(input)
+
+	for scanner.Scan(){
+		ip := strings.TrimSpace(scanner.Text())
+		if ip == "" {
+			continue
+		}
+		if ps.IsIP(ip) || ps.IsIPRange(ip){
+			rst,err :=ParseIpv4Range(ip)
+			if err!=nil{
+				continue
+			}
+			ips = append(ips,rst)
+		}
+	}
+	return ips,nil
 }

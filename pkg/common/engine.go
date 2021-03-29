@@ -2,10 +2,10 @@ package common
 
 import (
 	"fmt"
-	"io"
-	"net"
 	ps "github.com/4dogs-cn/TXPortMap/pkg/common/ipparser"
 	rc "github.com/4dogs-cn/TXPortMap/pkg/common/rangectl"
+	"io"
+	"net"
 	"strings"
 	"sync"
 	"time"
@@ -125,6 +125,15 @@ func (e *Engine) Parser() error {
 		}
 	}
 
+	if ipFile != "" {
+		rst, err := rc.ParseIPFromFile(ipFile)
+		if err == nil {
+			for _, r := range rst {
+				e.TaskIps = append(e.TaskIps, r)
+			}
+		}
+	}
+
 	if len(excIps) != 0 {
 		for _, ipstr := range excIps {
 			if ps.IsIP(ipstr) || ps.IsIPRange(ipstr) {
@@ -235,7 +244,7 @@ func scanner(ip string, port uint64) {
 	var dwSvc int
 	var iRule = -1
 	var bIsIdentification = false
-	var iCntTimeOut = 0
+	//var iCntTimeOut = 0
 
 	// 端口开放状态，发送报文，获取响应
 	// 先判断端口是不是优先识别协议端口
@@ -256,15 +265,12 @@ func scanner(ip string, port uint64) {
 	}
 
 	if dwSvc == SOCKET_READ_TIMEOUT {
-		iCntTimeOut++
+		return
 	}
 
 	// 发送其他协议查询包
 	for i := 0; i < iPacketMask; i++ {
 		// 超时2次,不再识别
-		if iCntTimeOut >= 2 {
-			break
-		}
 
 		if i == 0 {
 			// 说明是http，数据需要拼装一下
@@ -286,7 +292,7 @@ func scanner(ip string, port uint64) {
 		}
 
 		if dwSvc == SOCKET_READ_TIMEOUT {
-			iCntTimeOut++
+			return
 		}
 
 		dwSvc = SendIdentificationPacketFunction(st_Identification_Packet[i].Packet, ip, port)
@@ -295,7 +301,7 @@ func scanner(ip string, port uint64) {
 		}
 
 		if dwSvc == SOCKET_READ_TIMEOUT {
-			iCntTimeOut++
+			return
 		}
 	}
 
@@ -341,7 +347,8 @@ func SendIdentificationPacketFunction(data []byte, ip string, port uint64) int {
 	var szSvcName string
 
 	// 这里设置成6秒是因为超时的时候会重新尝试5次，
-	readTimeout := 20 * time.Second
+
+	readTimeout := 2 * time.Second
 
 	// 设置读取的超时时间为6s
 	conn.SetReadDeadline(time.Now().Add(readTimeout))

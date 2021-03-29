@@ -39,6 +39,8 @@ var (
 	NumThreads int
 	excPorts   []string // 待排除端口
 	excIps     []string // 待排除Ip
+	ipFile       string
+
 )
 
 /**
@@ -61,6 +63,7 @@ func init() {
 	flag.IntVar(&NumThreads, "n", 800, "number of goroutines, between 1 and 2000")
 	flag.Var(newSliceValue([]string{}, &excPorts), "ep", "set port ranges to exclude")
 	flag.Var(newSliceValue([]string{}, &excIps), "ei", "set ip ranges to exclude")
+	flag.StringVar(&ipFile,"l","","input ips file")
 }
 
 type Identification_Packet struct {
