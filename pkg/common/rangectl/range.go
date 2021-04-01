@@ -163,38 +163,55 @@ func ParseIpv4Range(ip string) (Range, error) {
 	return result, nil
 }
 
-
-func ParseIPFromFile(path string) ([]Range ,error){
+func ParseIPFromFile(path string) ([]Range, error) {
 	var ips []Range
-	p,err := os.Stat(path)
-	if err != nil{
-		return nil,err
+	p, err := os.Stat(path)
+	if err != nil {
+		return nil, err
 	}
-	if p.IsDir(){
-		return nil,fmt.Errorf("could not input a dir: %s",path)
-	}
-
-	input,err := os.Open(path)
-
-	if err != nil{
-		return nil,fmt.Errorf("open file error: %s",path)
+	if p.IsDir() {
+		return nil, fmt.Errorf("could not input a dir: %s", path)
 	}
 
+	input, err := os.Open(path)
+
+	if err != nil {
+		return nil, fmt.Errorf("open file error: %s", path)
+	}
 
 	scanner := bufio.NewScanner(input)
 
-	for scanner.Scan(){
+	for scanner.Scan() {
 		ip := strings.TrimSpace(scanner.Text())
 		if ip == "" {
 			continue
 		}
-		if ps.IsIP(ip) || ps.IsIPRange(ip){
-			rst,err :=ParseIpv4Range(ip)
-			if err!=nil{
+		if ps.IsIP(ip) || ps.IsIPRange(ip) {
+			rst, err := ParseIpv4Range(ip)
+			if err != nil {
 				continue
 			}
-			ips = append(ips,rst)
+			ips = append(ips, rst)
+		}else{
+			tmp_ips, mask, err := ps.DomainToIp(ip)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			for _, ip := range tmp_ips {
+				addr := ip
+				if mask != "" {
+					addr = ip + "/" + mask
+				}
+				result, err := ParseIpv4Range(addr)
+
+				if err != nil {
+					fmt.Println("Error occured while parse iprange")
+					continue
+				}
+				ips = append(ips,result)
+			}
 		}
 	}
-	return ips,nil
+	return ips, nil
 }
