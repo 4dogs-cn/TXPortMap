@@ -15,6 +15,7 @@ import (
 */
 
 func ComparePackets(rcv []byte, rcvSize int, szBan *string, szSvcName *string) int {
+
 	var dwRecognition = UNKNOWN_PORT
 	var buf = rcv[:]
 	//var buf = rcv[:rcvSize]
@@ -46,6 +47,10 @@ func ComparePackets(rcv []byte, rcvSize int, szBan *string, szSvcName *string) i
 	var cFlag_MongoDB = []byte{0x4d, 0x09, 0x50, 0x00}
 	var cBit_MongoDB []byte
 
+
+	if rcvSize <4{
+		goto Return
+	}
 	if bytes.Equal(buf[:3], []byte("220")) {
 		*szBan = printBuf
 		if bytes.Contains(bufUp, []byte("FTP")) || bytes.Contains(bufUp, []byte("FILEZILLA")) || bytes.Contains(bufUp, []byte("SERVICE READY FOR NEW USER")) {
@@ -130,9 +135,14 @@ func ComparePackets(rcv []byte, rcvSize int, szBan *string, szSvcName *string) i
 	// VNC
 	if bytes.Equal(buf[:4], []byte("\x52\x46\x42\x20")) {
 		*szSvcName = "vnc"
-		*szBan = fmt.Sprintf("RFB %c.%c", buf[6], buf[10])
-		dwRecognition = VNC
+		if len(buf) > 10 {
+			*szBan = fmt.Sprintf("RFB %c.%c", buf[6], buf[10])
 
+		} else {
+			*szBan = fmt.Sprintf("RFB *.*")
+		}
+
+		dwRecognition = VNC
 		goto Return
 	}
 
@@ -146,21 +156,22 @@ func ComparePackets(rcv []byte, rcvSize int, szBan *string, szSvcName *string) i
 	}
 
 	// MYSQL  TODO::  默认使用了小端序，需要考虑大端序的情况
-	if rcvSize > 5 && buf[4] == 0xff && buf[0] == uint8(rcvSize-4) {
-		*szSvcName = "mysql"
-		//var uErr uint16
+		if rcvSize > 7 && buf[4] == 0xff && buf[0] == uint8(rcvSize-4) {
+			*szSvcName = "mysql"
+			//var uErr uint16
 
-		uErr := binary.LittleEndian.Uint16([]byte(buf[5:7]))
+			uErr := binary.LittleEndian.Uint16([]byte(buf[5:7]))
 
-		if uErr == 1129 {
-			*szBan = "BLOCKED"
-			dwRecognition = MySQL_BLOCKED
-		} else {
-			*szBan = "NOT ALLOWED"
-			dwRecognition = MySQL_NOT_ALLOWED
-		}
+			if uErr == 1129 {
+				*szBan = "BLOCKED"
+				dwRecognition = MySQL_BLOCKED
+			} else {
+				*szBan = "NOT ALLOWED"
+				dwRecognition = MySQL_NOT_ALLOWED
+			}
 
-		goto Return
+			goto Return
+
 
 	}
 
@@ -279,6 +290,7 @@ func ComparePackets(rcv []byte, rcvSize int, szBan *string, szSvcName *string) i
 
 	// DNS
 	//var szFlagDns = [12]byte{0x76, 0x65, 0x72, 0x73, 0x69, 0x6F, 0x6E, 0x04, 0x62, 0x69, 0x6E, 0x64}
+
 	if buf[1] == uint8(rcvSize-2) && bytes.Contains(buf, szFlagDns) {
 		// TODO::
 		*szSvcName = "dns"
@@ -368,9 +380,9 @@ func ComparePackets(rcv []byte, rcvSize int, szBan *string, szSvcName *string) i
 
 		}
 		// HTTP 打印100个字符就够了，不然整个网页太长
-		if len(printBuf) > 100{
+		if len(printBuf) > 100 {
 			*szBan = printBuf[:100]
-		}else {
+		} else {
 			*szBan = printBuf
 		}
 		goto Return
@@ -456,6 +468,7 @@ func ComparePackets(rcv []byte, rcvSize int, szBan *string, szSvcName *string) i
 	}
 
 	// MSSQL
+
 	if buf[3] == byte(rcvSize) && buf[0] == 0x04 {
 		*szSvcName = "mssql"
 		dwRecognition = MSSQL
