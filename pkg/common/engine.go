@@ -96,7 +96,7 @@ func (e *Engine) Scheduler() {
 // 参数解析，对命令行中传递的参数进行格式化存储
 func (e *Engine) Parser() error {
 	var err error
-	Writer, err = output.NewStandardWriter(nocolor,false, rstfile, tracelog)
+	Writer, err = output.NewStandardWriter(nocolor,json, rstfile, tracelog)
 	if err != nil {
 		return err
 	}

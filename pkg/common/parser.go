@@ -40,7 +40,8 @@ var (
 	excPorts   []string // 待排除端口
 	excIps     []string // 待排除Ip
 	ipFile     string
-	nocolor      bool   //彩色打印
+	nocolor    bool //彩色打印
+	json       bool
 	tracelog   string //请求日志
 	rstfile    string //文件保存
 )
@@ -67,8 +68,10 @@ func init() {
 	flag.Var(newSliceValue([]string{}, &excIps), "ei", "set ip ranges to exclude")
 	flag.StringVar(&ipFile, "l", "", "input ips file")
 	flag.BoolVar(&nocolor, "nocolor", false, "using color ascii to screen")
+	flag.BoolVar(&json, "json", false, "output json format")
 	flag.StringVar(&tracelog, "tracefile", "", "request log")
 	flag.StringVar(&rstfile, "o", "rst.txt", "success log")
+
 }
 
 type Identification_Packet struct {
