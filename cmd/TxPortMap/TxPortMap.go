@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	 _ "github.com/projectdiscovery/fdmax/autofdmax"	//Add automatic increase of file descriptors in linux
 	"github.com/4dogs-cn/TXPortMap/pkg/common"
 	"os"
 )
