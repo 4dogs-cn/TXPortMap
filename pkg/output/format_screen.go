@@ -20,14 +20,14 @@ func (w *StandardWriter) formatScreen(output *ResultEvent) []byte {
 	builder.WriteString(color.YellowString(output.Info.Service))
 	builder.WriteString("] ")
 
-	if output.WorkingEvent != nil {
+	if output.WorkingEvent != nil{
 		switch tmp := output.WorkingEvent.(type) {
 		case Ghttp.Result:
 			builder.WriteString(tmp.ToString())
 		default:
 			builder.WriteString(conversion.ToString(tmp))
 		}
-	} else {
+	}else{
 		builder.WriteRune('[')
 		builder.WriteString(color.GreenString(output.Info.Banner))
 		builder.WriteString("] ")
