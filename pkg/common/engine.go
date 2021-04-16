@@ -96,7 +96,7 @@ func (e *Engine) Scheduler() {
 // 参数解析，对命令行中传递的参数进行格式化存储
 func (e *Engine) Parser() error {
 	var err error
-	Writer, err = output.NewStandardWriter(nocolor,json, rstfile, tracelog)
+	Writer, err = output.NewStandardWriter(nocolor, json, rstfile, tracelog)
 	if err != nil {
 		return err
 	}
@@ -343,7 +343,7 @@ func SendIdentificationPacketFunction(data []byte, ip string, port uint64) int {
 	conn, err := net.DialTimeout("tcp", addr, 5*time.Second)
 	if err != nil {
 		// 端口是closed状态
-		Writer.Request(ip,conversion.ToString(port),"tcp",fmt.Errorf("time out"))
+		Writer.Request(ip, conversion.ToString(port), "tcp", fmt.Errorf("time out"))
 		return SOCKET_CONNECT_FAILED
 	}
 
@@ -394,23 +394,22 @@ func SendIdentificationPacketFunction(data []byte, ip string, port uint64) int {
 			break
 		}
 	}
-	Writer.Request(ip,conversion.ToString(port),"tcp",err)
+	Writer.Request(ip, conversion.ToString(port), "tcp", err)
 	// 服务识别
 	if num > 0 {
 		dwSvc = ComparePackets(fingerprint, num, &szBan, &szSvcName)
-		if len(szBan) > 15{
+		if len(szBan) > 15 {
 			szBan = szBan[:15]
 		}
 		if dwSvc > UNKNOWN_PORT && dwSvc < SOCKET_CONNECT_FAILED {
 			//even.WorkingEvent = "found"
-			if szSvcName == "ssl/tls" || szSvcName == "http"{
-				 rst := Ghttp.GetHttpTitle(ip,szSvcName,int(port))
-				 even.WorkingEvent = rst
-			}else{
+			if szSvcName == "ssl/tls" || szSvcName == "http" {
+				rst := Ghttp.GetHttpTitle(ip, szSvcName, int(port))
+				even.WorkingEvent = rst
+			} else {
 				even.Info.Banner = strings.TrimSpace(szBan)
-				even.Info.Service = szSvcName
-
 			}
+			even.Info.Service = szSvcName
 			even.Time = time.Now()
 			// fmt.Printf("Discovered open port\t%d\ton\t%s\t\t%s\t\t%s\n", port, ip, szSvcName, strings.TrimSpace(szBan))
 			Writer.Write(even)
