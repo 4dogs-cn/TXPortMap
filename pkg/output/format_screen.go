@@ -16,6 +16,9 @@ func (w *StandardWriter) formatScreen(output *ResultEvent) []byte {
 	builder.WriteRune('[')
 	builder.WriteString(color.RedString(output.Target))
 	builder.WriteString("] ")
+	builder.WriteRune('[')
+	builder.WriteString(color.YellowString(output.Info.Service))
+	builder.WriteString("] ")
 
 	if output.WorkingEvent != nil{
 		switch tmp := output.WorkingEvent.(type) {
@@ -26,8 +29,6 @@ func (w *StandardWriter) formatScreen(output *ResultEvent) []byte {
 		}
 	}else{
 		builder.WriteRune('[')
-		builder.WriteString(color.YellowString(output.Info.Service))
-		builder.WriteString(": ")
 		builder.WriteString(color.GreenString(output.Info.Banner))
 		builder.WriteString("] ")
 	}
