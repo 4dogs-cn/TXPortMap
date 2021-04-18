@@ -406,6 +406,7 @@ func SendIdentificationPacketFunction(data []byte, ip string, port uint64) int {
 			if szSvcName == "ssl/tls" || szSvcName == "http"{
 				 rst := Ghttp.GetHttpTitle(ip,szSvcName,int(port))
 				 even.WorkingEvent = rst
+				 even.Info.Service = szSvcName
 			}else{
 				even.Info.Banner = strings.TrimSpace(szBan)
 				even.Info.Service = szSvcName
