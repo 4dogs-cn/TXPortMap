@@ -3,12 +3,16 @@ package Ghttp
 import (
 	"bytes"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/4dogs-cn/TXPortMap/pkg/conversion"
 	"github.com/fatih/color"
 	"io/ioutil"
+	"net"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -66,6 +70,8 @@ retry:
 	if port > 0 {
 		URL = fmt.Sprintf("%s://%s:%d", protocol, domain, port)
 	}
+
+
 
 	var client *http.Client
 	//DEBUG := false
@@ -142,6 +148,7 @@ retry:
 		builder.WriteString(resp.Header.Get("Content-Type"))
 		builder.WriteRune(']')
 	}
+
 
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
@@ -256,4 +263,86 @@ func (r *Result) ToString() string {
 	}
 
 	return builder.String()
+}
+
+func hostsFrom(ss []string) []string {
+	for i, s := range ss {
+		u, _ := url.Parse(s)
+		if host := u.Hostname(); host != "" {
+			ss[i] = host
+		}
+	}
+	return ss
+}
+
+type hostinfo struct {
+	Host  string
+	Port  int
+	Certs []*x509.Certificate
+}
+
+func (h *hostinfo) getCerts(timeout time.Duration) error {
+	//log.Printf("connecting to %s:%d", h.Host, h.Port)
+	dialer := &net.Dialer{Timeout: timeout}
+	conn, err := tls.DialWithDialer(
+		dialer,
+		"tcp",
+		h.Host+":"+strconv.Itoa(h.Port),
+		&tls.Config{
+			InsecureSkipVerify: true,
+		})
+	if err != nil {
+		return err
+	}
+
+	defer conn.Close()
+
+	if err := conn.Handshake(); err != nil {
+		return err
+	}
+
+	pc := conn.ConnectionState().PeerCertificates
+	h.Certs = make([]*x509.Certificate, 0, len(pc))
+	for _, cert := range pc {
+		if cert.IsCA {
+			continue
+		}
+		h.Certs = append(h.Certs, cert)
+	}
+
+	return nil
+}
+
+func CertInfo(host string, port string, timeout time.Duration) (commonName string, dnsNames []string, err error) {
+	port_int,err := strconv.Atoi(port)
+	if err != nil{
+		return commonName, dnsNames, err
+	}
+	info := hostinfo{Host: host, Port: port_int}
+	err = info.getCerts(timeout)
+	if err != nil {
+		return commonName, dnsNames, err
+	}
+	for _, cert := range info.Certs {
+		if cert != nil && cert.Subject.CommonName != "" {
+			return cert.Subject.CommonName, cert.DNSNames, err
+		}
+	}
+	return commonName, dnsNames, errors.New("not found")
+}
+
+func GetCert(domain string, port int)(string,error){
+		var CN string
+		var DN []string
+		var ret string
+		var err error
+		if port > 0 {
+			CN, DN, err = CertInfo(domain,  strconv.Itoa(port), 5*time.Second)
+		}else{
+			CN, DN, err = CertInfo(domain, "443", 5*time.Second)
+		}
+		ret = "CommonName:"+CN+"; "
+		ret = ret + "DNSName:"
+		ret = ret + DN[0]
+		return ret,err
 }
