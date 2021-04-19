@@ -342,7 +342,9 @@ func GetCert(domain string, port int)(string,error){
 			CN, DN, err = CertInfo(domain, "443", 5*time.Second)
 		}
 		ret = "CommonName:"+CN+"; "
-		ret = ret + "DNSName:"
-		ret = ret + DN[0]
+		if len(DN)>0 {
+			ret = ret + "DNSName:"
+			ret = ret + DN[0]
+		}
 		return ret,err
 }
