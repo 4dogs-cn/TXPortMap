@@ -406,13 +406,11 @@ func SendIdentificationPacketFunction(data []byte, ip string, port uint64) int {
 			if szSvcName == "ssl/tls" || szSvcName == "http"{
 				 rst := Ghttp.GetHttpTitle(ip,szSvcName,int(port))
 				 even.WorkingEvent = rst
-				 if szSvcName == "ssl/tls" {
-					cert ,err0 := Ghttp.GetCert(ip,int(port))
-					if err0 != nil{
-						cert = ""
-					}
-					even.Info.Cert = cert
+				 cert ,err0 := Ghttp.GetCert(ip,int(port))
+				 if err0 != nil{
+					cert = ""
 				 }
+				 even.Info.Cert = cert
 			}else{
 				even.Info.Banner = strings.TrimSpace(szBan)
 			}
