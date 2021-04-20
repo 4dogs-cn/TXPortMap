@@ -20,7 +20,7 @@ func (w *StandardWriter) formatScreen(output *ResultEvent) []byte {
 	builder.WriteString(color.YellowString(output.Info.Service))
 	builder.WriteString("] ")
 
-	if output.Info.Service == "ssl/tls" {
+	if output.Info.Service == "ssl/tls" || output.Info.Service == "http"{
 		builder.WriteRune('[')
 		builder.WriteString(color.YellowString(output.Info.Cert))
 		builder.WriteString("] ")
