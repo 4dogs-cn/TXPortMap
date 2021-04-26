@@ -25,6 +25,7 @@ type Writer interface {
 type Info struct {
 	Banner  string
 	Service string
+	Cert	string
 }
 type ResultEvent struct {
 	WorkingEvent interface{} `json:"WorkingEvent"`
