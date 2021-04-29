@@ -71,8 +71,6 @@ retry:
 		URL = fmt.Sprintf("%s://%s:%d", protocol, domain, port)
 	}
 
-
-
 	var client *http.Client
 	//DEBUG := false
 	//if DEBUG {
@@ -148,7 +146,6 @@ retry:
 		builder.WriteString(resp.Header.Get("Content-Type"))
 		builder.WriteRune(']')
 	}
-
 
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
@@ -244,22 +241,17 @@ func (r *Result) ToString() string {
 	} else {
 		builder.WriteString("[")
 		builder.WriteString(color.GreenString(conversion.ToString(r.StatusCode)))
-		if r.ContentLength != -1 {
-			builder.WriteString("|")
-			builder.WriteString(color.YellowString(conversion.ToString(r.ContentLength)))
+		builder.WriteString("] ")
+		if r.WebServer != "" {
+			builder.WriteString("[")
+			builder.WriteString(color.GreenString(r.WebServer))
+			builder.WriteString("] ")
 		}
-		builder.WriteString("]")
-
-		if r.Title !=""{
+		if r.Title != "" {
 			builder.WriteString("[")
 			builder.WriteString(color.GreenString(r.Title))
-			builder.WriteString("]")
-		}else{
-			builder.WriteString("[")
-			builder.WriteString(color.GreenString(r.str[:10]))
-			builder.WriteString("]")
+			builder.WriteString("] ")
 		}
-
 	}
 
 	return builder.String()
@@ -314,8 +306,8 @@ func (h *hostinfo) getCerts(timeout time.Duration) error {
 }
 
 func CertInfo(host string, port string, timeout time.Duration) (commonName string, dnsNames []string, err error) {
-	port_int,err := strconv.Atoi(port)
-	if err != nil{
+	port_int, err := strconv.Atoi(port)
+	if err != nil {
 		return commonName, dnsNames, err
 	}
 	info := hostinfo{Host: host, Port: port_int}
@@ -331,20 +323,20 @@ func CertInfo(host string, port string, timeout time.Duration) (commonName strin
 	return commonName, dnsNames, errors.New("not found")
 }
 
-func GetCert(domain string, port int)(string,error){
-		var CN string
-		var DN []string
-		var ret string
-		var err error
-		if port > 0 {
-			CN, DN, err = CertInfo(domain,  strconv.Itoa(port), 5*time.Second)
-		}else{
-			CN, DN, err = CertInfo(domain, "443", 5*time.Second)
-		}
-		ret = "CommonName:"+CN+"; "
-		if len(DN)>0 {
-			ret = ret + "DNSName:"
-			ret = ret + DN[0]
-		}
-		return ret,err
+func GetCert(domain string, port int) (string, error) {
+	var CN string
+	var DN []string
+	var ret string
+	var err error
+	if port > 0 {
+		CN, DN, err = CertInfo(domain, strconv.Itoa(port), 5*time.Second)
+	} else {
+		CN, DN, err = CertInfo(domain, "443", 5*time.Second)
+	}
+	ret = "CommonName:" + CN + "; "
+	if len(DN) > 0 {
+		ret = ret + "DNSName:"
+		ret = ret + DN[0]
+	}
+	return ret, err
 }
