@@ -5,37 +5,43 @@ import (
 	"github.com/4dogs-cn/TXPortMap/pkg/Ginfo/Ghttp"
 	"github.com/4dogs-cn/TXPortMap/pkg/conversion"
 	"github.com/fatih/color"
+	"strings"
 )
 
 // formatScreen formats the output for showing on screen.
 func (w *StandardWriter) formatScreen(output *ResultEvent) []byte {
 	builder := &bytes.Buffer{}
-	builder.WriteRune('[')
-	builder.WriteString(color.CyanString(output.Time.Format("2006-01-02 15:04:05")))
-	builder.WriteString("] ")
-	builder.WriteRune('[')
 	builder.WriteString(color.RedString(output.Target))
-	builder.WriteString("] ")
-	builder.WriteRune('[')
+	builder.WriteString(" ")
 	builder.WriteString(color.YellowString(output.Info.Service))
-	builder.WriteString("] ")
 
 	if output.Info.Service == "ssl/tls" || output.Info.Service == "http"{
-		builder.WriteRune('[')
-		builder.WriteString(color.YellowString(output.Info.Cert))
-		builder.WriteString("] ")
+		if len(output.Info.Cert) > 0 {
+			builder.WriteString(" [")
+			builder.WriteString(color.YellowString(output.Info.Cert))
+			builder.WriteString("]")
+		}
 	}
 	if output.WorkingEvent != nil{
 		switch tmp := output.WorkingEvent.(type) {
 		case Ghttp.Result:
-			builder.WriteString(tmp.ToString())
+			httpBanner := tmp.ToString()
+			if len(httpBanner)>0 {
+				builder.WriteString(" | ")
+				builder.WriteString(httpBanner)
+			}
 		default:
-			builder.WriteString(conversion.ToString(tmp))
+			result := conversion.ToString(tmp)
+			if strings.HasPrefix(result,"\\x") == false && len(result)>0 {
+				builder.WriteString(" | ")
+				builder.WriteString(result)
+			}
 		}
 	}else{
-		builder.WriteRune('[')
-		builder.WriteString(color.GreenString(output.Info.Banner))
-		builder.WriteString("] ")
+		if strings.HasPrefix(output.Info.Banner, "\\x") == false && len(output.Info.Banner)>0{
+			builder.WriteString(" | ")
+			builder.WriteString(color.GreenString(output.Info.Banner))
+		}
 	}
 	return builder.Bytes()
 }
