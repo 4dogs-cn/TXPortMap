@@ -96,7 +96,7 @@ func (e *Engine) Scheduler() {
 // 参数解析，对命令行中传递的参数进行格式化存储
 func (e *Engine) Parser() error {
 	var err error
-	Writer, err = output.NewStandardWriter(nocolor,json, rstfile, tracelog)
+	Writer, err = output.NewStandardWriter(nocolor, json, rstfile, tracelog)
 	if err != nil {
 		return err
 	}
@@ -256,6 +256,7 @@ func scanner(ip string, port uint64) {
 	var dwSvc int
 	var iRule = -1
 	var bIsIdentification = false
+	var resultEvent *output.ResultEvent
 	//var iCntTimeOut = 0
 
 	// 端口开放状态，发送报文，获取响应
@@ -266,17 +267,17 @@ func scanner(ip string, port uint64) {
 			iRule = svc.Identification_RuleId
 			data := st_Identification_Packet[iRule].Packet
 
-			dwSvc = SendIdentificationPacketFunction(data, ip, port)
-
+			dwSvc, resultEvent = SendIdentificationPacketFunction(data, ip, port)
 			break
 		}
 	}
-
 	if dwSvc > UNKNOWN_PORT && dwSvc <= SOCKET_CONNECT_FAILED {
+		Writer.Write(resultEvent)
 		return
 	}
 
 	if dwSvc == SOCKET_READ_TIMEOUT {
+		Writer.Write(resultEvent)
 		return
 	}
 
@@ -293,8 +294,9 @@ func scanner(ip string, port uint64) {
 				szOption = fmt.Sprintf("%s%s:%d\r\n\r\n", st_Identification_Packet[0].Packet, ip, port)
 			}
 
-			dwSvc = SendIdentificationPacketFunction([]byte(szOption), ip, port)
+			dwSvc, resultEvent = SendIdentificationPacketFunction([]byte(szOption), ip, port)
 			if dwSvc > UNKNOWN_PORT && dwSvc <= SOCKET_CONNECT_FAILED {
+				Writer.Write(resultEvent)
 				return
 			}
 		}
@@ -304,19 +306,24 @@ func scanner(ip string, port uint64) {
 		}
 
 		if dwSvc == SOCKET_READ_TIMEOUT {
+			Writer.Write(resultEvent)
 			return
 		}
 
-		dwSvc = SendIdentificationPacketFunction(st_Identification_Packet[i].Packet, ip, port)
+		dwSvc, resultEvent = SendIdentificationPacketFunction(st_Identification_Packet[i].Packet, ip, port)
 		if dwSvc > UNKNOWN_PORT && dwSvc <= SOCKET_CONNECT_FAILED {
+			Writer.Write(resultEvent)
 			return
 		}
 
 		if dwSvc == SOCKET_READ_TIMEOUT {
+			Writer.Write(resultEvent)
 			return
 		}
 	}
 
+	Writer.Write(resultEvent)
+	return
 }
 
 func worker(res chan Addr, wg *sync.WaitGroup) {
@@ -330,7 +337,7 @@ func worker(res chan Addr, wg *sync.WaitGroup) {
 	}()
 }
 
-func SendIdentificationPacketFunction(data []byte, ip string, port uint64) int {
+func SendIdentificationPacketFunction(data []byte, ip string, port uint64) (int, *output.ResultEvent) {
 	addr := fmt.Sprintf("%s:%d", ip, port)
 	even := &output.ResultEvent{
 		Target: addr,
@@ -343,8 +350,8 @@ func SendIdentificationPacketFunction(data []byte, ip string, port uint64) int {
 	conn, err := net.DialTimeout("tcp", addr, 5*time.Second)
 	if err != nil {
 		// 端口是closed状态
-		Writer.Request(ip,conversion.ToString(port),"tcp",fmt.Errorf("time out"))
-		return SOCKET_CONNECT_FAILED
+		Writer.Request(ip, conversion.ToString(port), "tcp", fmt.Errorf("time out"))
+		return SOCKET_CONNECT_FAILED, nil
 	}
 
 	defer conn.Close()
@@ -352,8 +359,9 @@ func SendIdentificationPacketFunction(data []byte, ip string, port uint64) int {
 	// Write方法是非阻塞的
 
 	if _, err := conn.Write(data); err != nil {
+		// 端口是开放的
 		Writer.Request(ip, conversion.ToString(port), "tcp", err)
-		return dwSvc
+		return dwSvc, even
 	}
 
 	// 直接开辟好空间，避免底层数组频繁申请内存
@@ -390,39 +398,38 @@ func SendIdentificationPacketFunction(data []byte, ip string, port uint64) int {
 		} else {
 			// 虽然没有读取到数据，但是端口仍然是open的
 			// fmt.Printf("Discovered open port\t%d\ton\t%s\n", port, ip)
-
 			break
 		}
 	}
-	Writer.Request(ip,conversion.ToString(port),"tcp",err)
+	Writer.Request(ip, conversion.ToString(port), "tcp", err)
 	// 服务识别
 	if num > 0 {
 		dwSvc = ComparePackets(fingerprint, num, &szBan, &szSvcName)
-		if len(szBan) > 15{
+		if len(szBan) > 15 {
 			szBan = szBan[:15]
 		}
 		if dwSvc > UNKNOWN_PORT && dwSvc < SOCKET_CONNECT_FAILED {
 			//even.WorkingEvent = "found"
-			if szSvcName == "ssl/tls" || szSvcName == "http"{
-				 rst := Ghttp.GetHttpTitle(ip,szSvcName,int(port))
-				 even.WorkingEvent = rst
-				 cert ,err0 := Ghttp.GetCert(ip,int(port))
-				 if err0 != nil{
+			if szSvcName == "ssl/tls" || szSvcName == "http" {
+				rst := Ghttp.GetHttpTitle(ip, Ghttp.HTTPorHTTPS, int(port))
+				even.WorkingEvent = rst
+				cert, err0 := Ghttp.GetCert(ip, int(port))
+				if err0 != nil {
 					cert = ""
-				 }
-				 even.Info.Cert = cert
-			}else{
+				}
+				even.Info.Cert = cert
+			} else {
 				even.Info.Banner = strings.TrimSpace(szBan)
 			}
 			even.Info.Service = szSvcName
 			even.Time = time.Now()
 			// fmt.Printf("Discovered open port\t%d\ton\t%s\t\t%s\t\t%s\n", port, ip, szSvcName, strings.TrimSpace(szBan))
-			Writer.Write(even)
-			return dwSvc
+			//Writer.Write(even)
+			//return dwSvc, even
 		}
 	}
 
-	return dwSvc
+	return dwSvc, even
 }
 
 // randomScan 随机扫描, 有问题，扫描C段时扫描不到，

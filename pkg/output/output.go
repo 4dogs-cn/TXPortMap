@@ -80,6 +80,9 @@ func NewStandardWriter(nocolor, json bool, file, traceFile string) (*StandardWri
 
 // Write writes the event to file and/or screen.
 func (w *StandardWriter) Write(event *ResultEvent) error {
+	if event == nil{
+		return nil
+	}
 	event.Time = time.Now()
 
 	var data []byte
