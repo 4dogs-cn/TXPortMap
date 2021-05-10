@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/4dogs-cn/TXPortMap/pkg/conversion"
-	"github.com/fatih/color"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -219,16 +218,16 @@ func (r *Result) ToString() string {
 	builder := &bytes.Buffer{}
 	if r.err == nil {
 		builder.WriteString("[")
-		builder.WriteString(color.GreenString(conversion.ToString(r.StatusCode)))
+		builder.WriteString(conversion.ToString(r.StatusCode))
 		builder.WriteString("] ")
 		if r.WebServer != "" {
 			builder.WriteString("[")
-			builder.WriteString(color.GreenString(r.WebServer))
+			builder.WriteString(r.WebServer)
 			builder.WriteString("] ")
 		}
 		if r.Title != "" {
 			builder.WriteString("[")
-			builder.WriteString(color.GreenString(r.Title))
+			builder.WriteString(r.Title)
 			builder.WriteString("] ")
 		}
 	}
