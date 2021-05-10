@@ -72,19 +72,6 @@ retry:
 	}
 
 	var client *http.Client
-	//DEBUG := false
-	//if DEBUG {
-	//	proxyUrl := "http://127.0.0.1:8080"
-	//	proxy, _ := url.Parse(proxyUrl)
-	//	tr := &http.Transport{
-	//		Proxy:           http.ProxyURL(proxy),
-	//		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	//	}
-	//	client = &http.Client{
-	//		Transport: tr,               //proxy
-	//		Timeout:   time.Second * 10, //timeout
-	//	}
-	//} else {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
@@ -92,7 +79,6 @@ retry:
 		Timeout:   time.Second * 10, //timeout
 		Transport: tr,
 	}
-	//}
 
 	req, err := http.NewRequest(method, URL, nil)
 	if err != nil {
@@ -148,27 +134,24 @@ retry:
 	}
 
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		// handle error
-		body = nil
-	}
-
-	title1 := ExtractTitle(string(body), resp)
-	finger := ExtractFinger(string(body), resp)
 	var titles []string
-	if title1 != "" {
-		titles = append(titles, title1)
-	}
-	if finger != "" {
-		titles = append(titles, finger)
+	body, err := ioutil.ReadAll(resp.Body)
+	if err == nil {
+		title1 := ExtractTitle(string(body), resp)
+		finger := ExtractFinger(string(body), resp)
+		if title1 != "" {
+			titles = append(titles, title1)
+		}
+		if finger != "" {
+			titles = append(titles, finger)
+		}
+		if scanopts.OutputTitle {
+			builder.WriteString(" [")
+			builder.WriteString(strings.Join(titles, "|"))
+			builder.WriteRune(']')
+		}
 	}
 	title := strings.Join(titles, "|")
-	if scanopts.OutputTitle {
-		builder.WriteString(" [")
-		builder.WriteString(title)
-		builder.WriteRune(']')
-	}
 
 	serverHeader1 := resp.Header.Get("Server")
 	serverHeader2 := resp.Header.Get("X-Powered-By")
@@ -234,11 +217,7 @@ func GetHttpTitle(target, proc string, port int) Result {
 func (r *Result) ToString() string {
 
 	builder := &bytes.Buffer{}
-	if r.err != nil {
-		builder.WriteString("[")
-		builder.WriteString(color.RedString(r.err.Error()))
-		builder.WriteString("]")
-	} else {
+	if r.err == nil {
 		builder.WriteString("[")
 		builder.WriteString(color.GreenString(conversion.ToString(r.StatusCode)))
 		builder.WriteString("] ")

@@ -59,9 +59,9 @@ func init() {
 	flag.Var(newSliceValue([]string{}, &cmdIps), "i", "set domain and ips")
 	//flag.StringVar(&cmdExPath, "e", "", "set exclude file path")
 	// flag.StringVar(&cmdCofPath, "c", "", "set config file path")
-	flag.Var(newSliceValue([]string{}, &cmdPorts), "p", "set port ranges to scan")
+	flag.Var(newSliceValue([]string{}, &cmdPorts), "p", "set port ranges to scan，default is top100")
 
-	flag.BoolVar(&cmdT1000, "t1000", false, "scan top100 ports")
+	flag.BoolVar(&cmdT1000, "t1000", false, "scan top1000 ports")
 	flag.BoolVar(&cmdRandom, "r", false, "random scan flag")
 	flag.IntVar(&NumThreads, "n", 800, "number of goroutines, between 1 and 2000")
 	flag.Var(newSliceValue([]string{}, &excPorts), "ep", "set port ranges to exclude")
