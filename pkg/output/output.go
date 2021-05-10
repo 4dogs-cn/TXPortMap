@@ -99,8 +99,13 @@ func (w *StandardWriter) Write(event *ResultEvent) error {
 	if len(data) == 0 {
 		return nil
 	}
+
+	w.outputMutex.Lock()
+	defer w.outputMutex.Unlock()
+
 	_, _ = w.w.Write(data)
 	_, _ = w.w.Write([]byte("\n"))
+
 	if w.outputFile != nil {
 		if !w.json {
 			data = decolorizerRegex.ReplaceAll(data, []byte(""))
@@ -109,6 +114,8 @@ func (w *StandardWriter) Write(event *ResultEvent) error {
 			return errors.Wrap(err, "could not write to output")
 		}
 	}
+
+
 	return nil
 }
 
