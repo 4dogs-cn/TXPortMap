@@ -45,6 +45,7 @@ var (
 	tracelog   string //请求日志
 	rstfile    string //文件保存
 	verify     bool //验证模式
+	skiphttp  bool //不请求httptitle
 )
 
 /**
@@ -74,6 +75,7 @@ func init() {
 	flag.StringVar(&tracelog, "tracefile", "", "request log")
 	flag.StringVar(&rstfile, "o", "rst.txt", "success log")
 	flag.BoolVar(&verify, "v", false, "verified from file")
+	flag.BoolVar(&skiphttp, "sk", false, "skip http request")
 }
 
 type Identification_Packet struct {
