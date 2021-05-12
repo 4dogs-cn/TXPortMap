@@ -201,6 +201,13 @@ func ComparePackets(rcv []byte, rcvSize int, szBan *string, szSvcName *string) i
 		goto Return
 	}
 
+	if bytes.Equal(buf[:17], []byte("Zookeeper version")) {
+		*szSvcName = "zookeeper"
+		dwRecognition = ZOOKEEPER
+		*szBan = strings.Split(printBuf,"-")[0]
+		goto Return
+	}
+
 	// Java-RMI  TODO::
 	if strings.Contains(printBuf, "|com.code42.messaging.security.") {
 		*szSvcName = "JavaRMI"
