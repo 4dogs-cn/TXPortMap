@@ -44,6 +44,7 @@ var (
 	json       bool
 	tracelog   string //请求日志
 	rstfile    string //文件保存
+	verify     bool //验证模式
 )
 
 /**
@@ -71,7 +72,7 @@ func init() {
 	flag.BoolVar(&json, "json", false, "output json format")
 	flag.StringVar(&tracelog, "tracefile", "", "request log")
 	flag.StringVar(&rstfile, "o", "rst.txt", "success log")
-
+	flag.BoolVar(&verify, "v", false, "verified from file")
 }
 
 type Identification_Packet struct {
