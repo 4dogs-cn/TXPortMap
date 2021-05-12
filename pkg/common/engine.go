@@ -45,6 +45,7 @@ type Engine struct {
 	//验证模式
 	Verify      bool
 	verList     []string
+
 }
 
 // 扫描目标建立，ip:port发送到任务通道
@@ -456,8 +457,10 @@ func SendIdentificationPacketFunction(data []byte, ip string, port uint64) (int,
 		if dwSvc > UNKNOWN_PORT && dwSvc < SOCKET_CONNECT_FAILED {
 			//even.WorkingEvent = "found"
 			if szSvcName == "ssl/tls" || szSvcName == "http" {
-				rst := Ghttp.GetHttpTitle(ip, Ghttp.HTTPorHTTPS, int(port))
-				even.WorkingEvent = rst
+				if !skiphttp {
+					rst := Ghttp.GetHttpTitle(ip, Ghttp.HTTPorHTTPS, int(port))
+					even.WorkingEvent = rst
+				}
 				cert, err0 := Ghttp.GetCert(ip, int(port))
 				if err0 != nil {
 					cert = ""
