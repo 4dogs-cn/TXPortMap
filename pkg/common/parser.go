@@ -55,6 +55,7 @@ var (
   -p: 需要扫描的端口列表，以逗号分隔，例如: 1-1000,3379,6379，和-p互斥
   -t100: 布尔类型，默认是扫描top100，否则扫描top1000端口，和-p互斥
   -r: 布尔类型，表示扫描方式，随机扫描还是顺序扫描
+  -v: 验证模式，是否从文件导入进行验证
 */
 func init() {
 	flag.Var(newSliceValue([]string{}, &cmdIps), "i", "set domain and ips")
