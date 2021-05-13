@@ -46,6 +46,8 @@ var (
 	rstfile    string //文件保存
 	verify     bool //验证模式
 	skiphttp  bool //不请求httptitle
+  nbtscan	   bool
+
 )
 
 /**
@@ -54,9 +56,11 @@ var (
   -e: 设置排除文件路径，排除文件内容为需要排除的ip地址列表
   -c: 配置文件路径，支持从配置文件中读取ip，地址列表
   -p: 需要扫描的端口列表，以逗号分隔，例如: 1-1000,3379,6379，和-p互斥
-  -t100: 布尔类型，默认是扫描top100，否则扫描top1000端口，和-p互斥
+  -t1000: 布尔类型，默认是扫描top100，否则扫描top1000端口，和-p互斥
   -r: 布尔类型，表示扫描方式，随机扫描还是顺序扫描
   -v: 验证模式，是否从文件导入进行验证
+  -nbtscan:	布尔类型，是否进行netbios扫描，默认为否
+
 */
 func init() {
 	flag.Var(newSliceValue([]string{}, &cmdIps), "i", "set domain and ips")
@@ -76,6 +80,8 @@ func init() {
 	flag.StringVar(&rstfile, "o", "rst.txt", "success log")
 	flag.BoolVar(&verify, "v", false, "verified from file")
 	flag.BoolVar(&skiphttp, "sk", false, "skip http request")
+  flag.BoolVar(&nbtscan, "nbtscan", false, "get netbios stat by UDP137 in local network")
+
 }
 
 type Identification_Packet struct {

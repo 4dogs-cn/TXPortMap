@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/4dogs-cn/TXPortMap/pkg/Ginfo/Ghttp"
+	"github.com/4dogs-cn/TXPortMap/pkg/Ginfo/Gnbtscan"
 	ps "github.com/4dogs-cn/TXPortMap/pkg/common/ipparser"
 	rc "github.com/4dogs-cn/TXPortMap/pkg/common/rangectl"
 	"github.com/4dogs-cn/TXPortMap/pkg/conversion"
@@ -22,13 +23,18 @@ type Addr struct {
 	port uint64
 }
 
+type NBTScanIPMap struct{
+	sync.Mutex
+	IPS map[string]struct{}
+}
 // type Range struct {
 // 	Begin uint64
 // 	End   uint64
 // }
 
 var (
-	Writer output.Writer
+	Writer     output.Writer
+	NBTScanIPs = NBTScanIPMap{IPS:make(map[string]struct{})}
 )
 
 type Engine struct {
@@ -46,6 +52,23 @@ type Engine struct {
 	Verify      bool
 	verList     []string
 
+}
+
+// SetIP as seen
+func (r *NBTScanIPMap) SetIP(ip string) {
+	r.Lock()
+	defer r.Unlock()
+
+	r.IPS[ip] = struct{}{}
+}
+
+// HasIP checks if an ip has been seen
+func (r *NBTScanIPMap) HasIP(ip string) bool {
+	r.Lock()
+	defer r.Unlock()
+
+	_, ok := r.IPS[ip]
+	return ok
 }
 
 // 扫描目标建立，ip:port发送到任务通道
@@ -298,11 +321,22 @@ func CreateEngine() *Engine {
 	}
 }
 
+func nbtscaner(ip string) {
+	resultEvent := output.ResultEvent{Target: ip, Info: &output.Info{}}
+	nbInfo, err := Gnbtscan.Scan(ip)
+	if err == nil && len(nbInfo) > 0 {
+		resultEvent.Info.Service = "nbstat"
+		resultEvent.Info.Banner = nbInfo
+		Writer.Write(&resultEvent)
+	}
+}
+
 func scanner(ip string, port uint64) {
 	var dwSvc int
 	var iRule = -1
 	var bIsIdentification = false
 	var resultEvent *output.ResultEvent
+	var packet []byte
 	//var iCntTimeOut = 0
 
 	// 端口开放状态，发送报文，获取响应
@@ -317,12 +351,7 @@ func scanner(ip string, port uint64) {
 			break
 		}
 	}
-	if dwSvc > UNKNOWN_PORT && dwSvc <= SOCKET_CONNECT_FAILED {
-		Writer.Write(resultEvent)
-		return
-	}
-
-	if dwSvc == SOCKET_READ_TIMEOUT {
+	if (dwSvc > UNKNOWN_PORT && dwSvc <= SOCKET_CONNECT_FAILED) || dwSvc == SOCKET_READ_TIMEOUT {
 		Writer.Write(resultEvent)
 		return
 	}
@@ -330,7 +359,9 @@ func scanner(ip string, port uint64) {
 	// 发送其他协议查询包
 	for i := 0; i < iPacketMask; i++ {
 		// 超时2次,不再识别
-
+		if bIsIdentification && iRule == i {
+			continue
+		}
 		if i == 0 {
 			// 说明是http，数据需要拼装一下
 			var szOption string
@@ -339,37 +370,19 @@ func scanner(ip string, port uint64) {
 			} else {
 				szOption = fmt.Sprintf("%s%s:%d\r\n\r\n", st_Identification_Packet[0].Packet, ip, port)
 			}
-
-			dwSvc, resultEvent = SendIdentificationPacketFunction([]byte(szOption), ip, port)
-			if dwSvc > UNKNOWN_PORT && dwSvc <= SOCKET_CONNECT_FAILED {
-				Writer.Write(resultEvent)
-				return
-			}
+			packet = []byte(szOption)
+		}else{
+			packet = st_Identification_Packet[i].Packet
 		}
 
-		if bIsIdentification && iRule == i {
-			continue
-		}
-
-		if dwSvc == SOCKET_READ_TIMEOUT {
-			Writer.Write(resultEvent)
-			return
-		}
-
-		dwSvc, resultEvent = SendIdentificationPacketFunction(st_Identification_Packet[i].Packet, ip, port)
-		if dwSvc > UNKNOWN_PORT && dwSvc <= SOCKET_CONNECT_FAILED {
-			Writer.Write(resultEvent)
-			return
-		}
-
-		if dwSvc == SOCKET_READ_TIMEOUT {
+		dwSvc, resultEvent = SendIdentificationPacketFunction(packet, ip, port)
+		if (dwSvc > UNKNOWN_PORT && dwSvc <= SOCKET_CONNECT_FAILED) || dwSvc == SOCKET_READ_TIMEOUT {
 			Writer.Write(resultEvent)
 			return
 		}
 	}
-
+	// 没有识别到服务，也要输出当前开放端口状态
 	Writer.Write(resultEvent)
-	return
 }
 
 func worker(res chan Addr, wg *sync.WaitGroup) {
@@ -377,6 +390,11 @@ func worker(res chan Addr, wg *sync.WaitGroup) {
 		defer wg.Done()
 
 		for addr := range res {
+			//do netbios stat scan
+			if nbtscan && NBTScanIPs.HasIP(addr.ip) == false{
+				NBTScanIPs.SetIP(addr.ip)
+				nbtscaner(addr.ip)
+			}
 			scanner(addr.ip, addr.port)
 		}
 
