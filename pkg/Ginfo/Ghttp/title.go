@@ -107,6 +107,8 @@ func ExtractFinger(body string, r *http.Response) (string) {
 			fingers = append(fingers, "Zabbix!!")
 		} else if strings.Contains(body, "Powered by Discuz!") || strings.Contains(body, "content=\"Discuz!") {
 			fingers = append(fingers, "Discuz!!")
+		}else if strings.Contains(body, "<title>KubeSphere</title>") {
+			fingers = append(fingers, "KubeSphere!!")
 		}
 	}
 
