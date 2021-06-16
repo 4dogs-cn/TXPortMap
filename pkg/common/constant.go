@@ -59,6 +59,7 @@ const (
 	ELASTICSEARCH // port : 9300
 	RTSP          // port : 554
 	LOTUSNOTES    // port : 1352
+	ZOOKEEPER		// port : 2181
 )
 
 const (

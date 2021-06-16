@@ -1,6 +1,7 @@
 package common
 
 import (
+	"bufio"
 	"fmt"
 	"github.com/4dogs-cn/TXPortMap/pkg/Ginfo/Ghttp"
 	"github.com/4dogs-cn/TXPortMap/pkg/Ginfo/Gnbtscan"
@@ -10,6 +11,8 @@ import (
 	"github.com/4dogs-cn/TXPortMap/pkg/output"
 	"io"
 	"net"
+	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -44,6 +47,11 @@ type Engine struct {
 	TaskChan    chan Addr // 传递待扫描的ip端口对
 	//DoneChan chan struct{}  // 任务完成通知
 	Wg *sync.WaitGroup
+
+	//验证模式
+	Verify      bool
+	verList     []string
+
 }
 
 // SetIP as seen
@@ -72,25 +80,36 @@ func (e *Engine) Run() {
 
 	// fmt.Println(e.TaskPorts)
 
-	// TODO:: if !e.RandomFlag
-	if !e.RandomFlag {
-		// 随机扫描，向任务通道随机发送addr
-		e.randomScan()
+	//验证模式
+	if e.Verify{
+		for _, verl := range e.verList {
+			addr.ip = strings.Split(verl,":")[0]
+			tmp_port,_:=strconv.Atoi(strings.Split(verl,":")[1])
+			addr.port = uint64(tmp_port)
+			e.TaskChan <- addr
+		}
 
-	} else {
-		// 顺序扫描，向任务通道顺序发送addr
-		for _, ipnum := range e.TaskIps {
-			for ips := ipnum.Begin; ips <= ipnum.End; ips++ {
-				ip := ps.UnParseIPv4(ips)
+	}else {
+		// TODO:: if !e.RandomFlag
+		if !e.RandomFlag {
+			// 随机扫描，向任务通道随机发送addr
+			e.randomScan()
 
-				for _, ports := range e.TaskPorts {
-					for port := ports.Begin; port <= ports.End; port++ {
-						addr.ip = ip
-						addr.port = port
+		} else {
+			// 顺序扫描，向任务通道顺序发送addr
+			for _, ipnum := range e.TaskIps {
+				for ips := ipnum.Begin; ips <= ipnum.End; ips++ {
+					ip := ps.UnParseIPv4(ips)
 
-						//e.SubmitTask(addr)
-						//fmt.Println("ip:",ip,":port",port)
-						e.TaskChan <- addr
+					for _, ports := range e.TaskPorts {
+						for port := ports.Begin; port <= ports.End; port++ {
+							addr.ip = ip
+							addr.port = port
+
+							//e.SubmitTask(addr)
+							//fmt.Println("ip:",ip,":port",port)
+							e.TaskChan <- addr
+						}
 					}
 				}
 			}
@@ -125,6 +144,32 @@ func (e *Engine) Parser() error {
 	}
 	var ports []string
 	// TODO:: 待增加排除ip和排除端口流程
+
+	//判断是否为验证模式
+	if verify == true{
+		if ipFile != "" {
+			f, err := os.Open(ipFile)
+			if err != nil {
+				fmt.Println("File error.")
+			} else {
+				buf := bufio.NewScanner(f)
+				for {
+					if !buf.Scan() {
+						break
+					}
+					line := buf.Text()
+					line = strings.TrimSpace(line)
+					e.verList = append(e.verList, line)
+				}
+			}
+
+		}else{
+			fmt.Println("Input ip:port file to Verify")
+			os.Exit(1)
+		}
+
+		return nil
+	}
 
 	for _, ipstr := range cmdIps {
 		if ps.IsIP(ipstr) || ps.IsIPRange(ipstr) {
@@ -272,6 +317,7 @@ func CreateEngine() *Engine {
 		TaskChan:    make(chan Addr, 1000),
 		WorkerCount: NumThreads,
 		Wg:          &sync.WaitGroup{},
+		Verify:      verify,
 	}
 }
 
@@ -429,8 +475,10 @@ func SendIdentificationPacketFunction(data []byte, ip string, port uint64) (int,
 		if dwSvc > UNKNOWN_PORT && dwSvc < SOCKET_CONNECT_FAILED {
 			//even.WorkingEvent = "found"
 			if szSvcName == "ssl/tls" || szSvcName == "http" {
-				rst := Ghttp.GetHttpTitle(ip, Ghttp.HTTPorHTTPS, int(port))
-				even.WorkingEvent = rst
+				if !skiphttp {
+					rst := Ghttp.GetHttpTitle(ip, Ghttp.HTTPorHTTPS, int(port))
+					even.WorkingEvent = rst
+				}
 				cert, err0 := Ghttp.GetCert(ip, int(port))
 				if err0 != nil {
 					cert = ""
