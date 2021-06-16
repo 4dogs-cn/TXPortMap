@@ -15,4 +15,4 @@ do
 done
 
 mv ./release/TxPortMap_windows_386 ./release/TxPortMap_windows_386.exe
-mv ./release/TxPortMap_windows_amd64 ./release/TxPortMap__windows_amd64.exe
+mv ./release/TxPortMap_windows_amd64 ./release/TxPortMap_windows_amd64.exe
