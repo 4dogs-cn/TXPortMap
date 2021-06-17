@@ -99,7 +99,7 @@ func ComparePackets(rcv []byte, rcvSize int, szBan *string, szSvcName *string) i
 	if bytes.Equal(buf[:9], []byte("rblsmtpd:")) {
 		// 反垃圾邮件
 		*szBan = printBuf
-		*szSvcName = "smpt"
+		*szSvcName = "smtp"
 		dwRecognition = SMTP
 
 		goto Return
@@ -222,7 +222,7 @@ func ComparePackets(rcv []byte, rcvSize int, szBan *string, szSvcName *string) i
 
 	// JDWP
 	if bytes.Equal(buf[:len("JDWP-Handshake")], []byte("JDWP-Handshake")) {
-		*szSvcName = "jwdp"
+		*szSvcName = "jdwp"
 		dwRecognition = JDWP
 
 		goto Return
