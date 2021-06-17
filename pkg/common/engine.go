@@ -346,8 +346,7 @@ func SendIdentificationPacketFunction(data []byte, ip string, port uint64) (int,
 
 	//fmt.Println(addr)
 	var dwSvc int = UNKNOWN_PORT
-
-	conn, err := net.DialTimeout("tcp", addr, 5*time.Second)
+	conn, err := net.DialTimeout("tcp", addr, time.Duration(tout * 1000) * time.Millisecond)
 	if err != nil {
 		// 端口是closed状态
 		Writer.Request(ip, conversion.ToString(port), "tcp", fmt.Errorf("time out"))

@@ -44,6 +44,7 @@ var (
 	json       bool
 	tracelog   string //请求日志
 	rstfile    string //文件保存
+	tout	   float64   //timeout
 )
 
 /**
@@ -71,6 +72,7 @@ func init() {
 	flag.BoolVar(&json, "json", false, "output json format")
 	flag.StringVar(&tracelog, "tracefile", "", "request log")
 	flag.StringVar(&rstfile, "o", "rst.txt", "success log")
+	flag.Float64Var(&tout,"t",0.5,"tcp connect time out default 0.5 second")
 
 }
 

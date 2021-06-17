@@ -1,0 +1,46 @@
+name: Go
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build_and_release:
+    strategy:
+      os:
+        - windows-latest
+        - macos-latest
+        - ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.15
+
+    - name: Build For Linux and MacOS and windows
+      run: go build -o "./TxPortMap_$(go env GOOS)_$(go env GOARCH)" -v cmd/TxPortMap/TxPortMap.go
+
+    - name: Upload Artifacts Windows
+      uses: actions/upload-artifact@v2
+      if: runner.os == 'Windows'
+      with:
+        name: TxPortMap_windows_amd64
+        path: ./TxPortMap__windows_amd64
+    - name: Upload Artifacts MacOS
+      uses: actions/upload-artifact@v2
+      if: runner.os == 'macOS'
+      with:
+        name: TxPortMap_darwin_amd64
+        path: ./TxPortMap__darwin_amd64
+
+
+    - name: Upload Artifacts Linux
+      uses: actions/upload-artifact@v2
+      if: runner.os == 'Linux'
+      with:
+        name: TxPortMap_linux_amd64
+        path: ./TxPortMap_linux_amd64
+
