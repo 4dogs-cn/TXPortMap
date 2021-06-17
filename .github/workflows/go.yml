@@ -29,13 +29,13 @@ jobs:
       if: runner.os == 'Windows'
       with:
         name: TxPortMap_windows_amd64
-        path: ./TxPortMap__windows_amd64
+        path: ./TxPortMap_windows_amd64
     - name: Upload Artifacts MacOS
       uses: actions/upload-artifact@v2
       if: runner.os == 'macOS'
       with:
         name: TxPortMap_darwin_amd64
-        path: ./TxPortMap__darwin_amd64
+        path: ./TxPortMap_darwin_amd64
 
 
     - name: Upload Artifacts Linux
@@ -45,3 +45,59 @@ jobs:
         name: TxPortMap_linux_amd64
         path: ./TxPortMap_linux_amd64
 
+  download_artifacts_and_release:
+    needs: build_and_release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Windows TxPortMap
+        uses: actions/download-artifact@v2
+        with:
+          name: TxPortMap_windows_amd64
+      - name: Download macOS TxPortMap
+        uses: actions/download-artifact@v2
+        with:
+          name: TxPortMap_darwin_amd64
+      - name: Download Linux TxPortMap
+        uses: actions/download-artifact@v2
+        with:
+          name: TxPortMap_linux_amd64
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.ACTIONS_RELEASE_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset Linux
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.ACTIONS_RELEASE_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
+          asset_path: ./TxPortMap_linux_amd64
+          asset_name: TxPortMap_linux_amd64
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Asset macOS
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.ACTIONS_RELEASE_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
+          asset_path: ./TxPortMap_darwin_amd64
+          asset_name: TxPortMap_darwin_amd64
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Asset Windows
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.ACTIONS_RELEASE_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
+          asset_path: ./TxPortMap_windows_amd64
+          asset_name: TxPortMap_windows_amd64
+          asset_content_type: application/octet-stream
