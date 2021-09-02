@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"go.uber.org/ratelimit"
 )
 
 type sliceValue []string
@@ -46,6 +47,8 @@ var (
 	rstfile    string //文件保存
 	tout	   float64   //timeout
 	nbtscan	   bool
+	limit      int
+	Limiter    ratelimit.Limiter
 )
 
 /**
@@ -67,6 +70,7 @@ func init() {
 	flag.BoolVar(&cmdT1000, "t1000", false, "scan top1000 ports")
 	flag.BoolVar(&cmdRandom, "r", false, "random scan flag")
 	flag.IntVar(&NumThreads, "n", 800, "number of goroutines, between 1 and 2000")
+	flag.IntVar(&limit, "limit", 0, "number of goroutines, between 1 and 2000")
 	flag.Var(newSliceValue([]string{}, &excPorts), "ep", "set port ranges to exclude")
 	flag.Var(newSliceValue([]string{}, &excIps), "ei", "set ip ranges to exclude")
 	flag.StringVar(&ipFile, "l", "", "input ips file")
