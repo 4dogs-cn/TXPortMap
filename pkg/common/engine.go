@@ -8,6 +8,7 @@ import (
 	rc "github.com/4dogs-cn/TXPortMap/pkg/common/rangectl"
 	"github.com/4dogs-cn/TXPortMap/pkg/conversion"
 	"github.com/4dogs-cn/TXPortMap/pkg/output"
+	"go.uber.org/ratelimit"
 	"io"
 	"net"
 	"strings"
@@ -66,7 +67,6 @@ func (r *NBTScanIPMap) HasIP(ip string) bool {
 // 扫描目标建立，ip:port发送到任务通道
 func (e *Engine) Run() {
 	var addr Addr
-
 	e.Wg.Add(e.WorkerCount)
 	go e.Scheduler()
 
@@ -267,6 +267,13 @@ func (e *Engine) Parser() error {
 }
 
 func CreateEngine() *Engine {
+
+	if limit > 1{
+		Limiter = ratelimit.New(limit)
+	}else{
+		Limiter = ratelimit.NewUnlimited()
+	}
+
 	return &Engine{
 		RandomFlag:  cmdRandom,
 		TaskChan:    make(chan Addr, 1000),
@@ -343,12 +350,14 @@ func worker(res chan Addr, wg *sync.WaitGroup) {
 	go func() {
 		defer wg.Done()
 
+
 		for addr := range res {
 			//do netbios stat scan
 			if nbtscan && NBTScanIPs.HasIP(addr.ip) == false{
 				NBTScanIPs.SetIP(addr.ip)
 				nbtscaner(addr.ip)
 			}
+			Limiter.Take()
 			scanner(addr.ip, addr.port)
 		}
 
