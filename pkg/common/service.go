@@ -46,8 +46,11 @@ func ComparePackets(rcv []byte, rcvSize int, szBan *string, szSvcName *string) i
 
 	var cFlag_MongoDB = []byte{0x4d, 0x09, 0x50, 0x00}
 	var cBit_MongoDB []byte
-
-
+	
+	if len(buf) <4 {
+		goto Return
+	}
+	
 	if rcvSize <4{
 		goto Return
 	}
