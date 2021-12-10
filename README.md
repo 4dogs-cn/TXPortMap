@@ -44,6 +44,8 @@ nmap 2分51.89秒
 ![image-20210329114524449](./img/image-20210329114524449.png)
 
 
+本项目 暂不进行更新 新项目为黑客语言yak开发 具有更多黑客功能 可移步官网 https://www.yaklang.io/
+并用yak语言实现有国产burp suite替代工具 yakit 单兵平台 https://github.com/yaklang/yakit
 
 交流群
 
