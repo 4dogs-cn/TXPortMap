@@ -233,8 +233,8 @@ func ComparePackets(rcv []byte, rcvSize int, szBan *string, szSvcName *string) i
 
 	// jabber
 	if bytes.Contains(buf, []byte("jabber.org")) &&
-		(bytes.EqualFold(buf[:len("<stream:error xmlns:")], []byte("<stream:error xmlns:")) &&
-			bytes.EqualFold(buf[:len("<?xml version=")], []byte("<?xml version=")) &&
+		(bytes.EqualFold(buf[:len("<stream:error xmlns:")], []byte("<stream:error xmlns:")) ||
+			bytes.EqualFold(buf[:len("<?xml version=")], []byte("<?xml version=")) ||
 			bytes.EqualFold(buf[:len("<stream:stream")], []byte("<stream:stream"))) {
 		*szSvcName = "jabber"
 		dwRecognition = JABBER
